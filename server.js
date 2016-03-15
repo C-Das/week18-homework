@@ -5,6 +5,7 @@ var expressHandlebars = require('express-handlebars');
 var mongoose = require('mongoose');
 var request = require('request');
 var logger = require('morgan');
+var mongojs = require('mongojs');
 var PORT = 3000
 
 var app = express();
@@ -15,10 +16,70 @@ app.use(bodyParser.urlencoded({
   extended :false
 }));
 
+app.engine('handlebars',expressHandlebars({defaultLayout:'main'}));
+app.set('view engine','handlebars');
+
 app.use(express.static('public'));
 
+//Database configuration
+mongoose.connect('mongodb://localhost/week18homework');
+var db = mongoose.connection;
+
+db.on('error', function(err) {
+  console.log('Mongoose Error: ', err);
+});
+db.once('open', function() {
+  console.log('Mongoose connection successful.');
+});
+
+//Require Schemas
+var Note = require('./model/noteModel.js');
+var User = require('./model/userModel.js');
+var Movies = require('./model/movieModel.js');
+
+var exampleUser = new User({
+  name: "Chinmay Das"
+});
+
+// exampleUser.save(function(err, doc) {
+//   if (err) {
+//     console.log(err);
+//   } else {
+//     console.log(doc);
+//   }
+// });
+
+//New Note Creation
+app.post('/submit', function(req, res) {
+  var newNote = new Note(req.body);
+//Save the new note
+  newNote.save(function(err, doc) {
+    if (err) {
+      res.send(err);
+    } else {
+
+//Find our user and push the new note id into the User's notes array
+      User.findOneAndUpdate({}, {$push: {'notes': doc._id}}, {new: true}, function(err, doc) {
+        if (err) {
+          res.send(err);
+        } else {
+          res.send(doc);
+        }
+      });
+    }
+  });
+});
+
 app.get('/',function(req,res){
-  res.send("Hi, This is on port: 3000");
+  //Find our user and push the new note id into the User's notes array
+    Movies.find({},function(err, doc) {
+      if (err) {
+        res.send(err);
+      } else {
+        res.render('index',{doc:doc});
+        // res.send(doc);
+      }
+    });
 });
 
 app.get('/scraper',function(req,res){
@@ -31,29 +92,34 @@ app.get('/scraper',function(req,res){
      $('.middle_col').each(function(i,elem){
         debugger
         // console.log($(this));
-        console.log($(this).find("a").text());
-        console.log("http://www.rottentomatoes.com"+$(this).find("a").attr("href"))
+        // console.log($(this).find("a").text());
+        // console.log("http://www.rottentomatoes.com"+$(this).find("a").attr("href"))
 
+        var movieName = $(this).find("a").text();
         var url = "http://www.rottentomatoes.com"+$(this).find("a").attr("href");
 
-        console.log(url);
+        request(url, function (error, response, body) {
 
-        // request('http://www.rottentomatoes.com/', function (error, response, body) {
+          if (!error && response.statusCode == 200) {
+            $ = cheerio.load(body);
+            debugger
+            // console.log($(this).find('.posterImage'));
+          }
+        });
 
-        //   if (!error && response.statusCode == 200) {
+        var movieList = new Movies({
+          movieName: movieName,
+          movieUrl:url
+        });
 
-        //     $ = cheerio.load(body);
+        movieList.save(function(err, doc) {
+          if (err) {
+            console.log(err);
+          } else {
+            console.log(doc);
+          }
+        });
 
-
-        //   }
-
-        // });
-
-       $(this).find('middle_col').each(function (i,elem){
-        console.log("2");
-         console.log("Title :"+$(this).children("a").text());
-         console.log("Link :"+$(this).children("a").attr("href"));
-       });
        // var title = $(this).find('.middle_col').children("a").text();
        // var link = $(this).find('.middle_col').children("a").attr("href");
        // console.log("Title :"+title);
