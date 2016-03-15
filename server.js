@@ -77,7 +77,6 @@ app.get('/',function(req,res){
         res.send(err);
       } else {
         res.render('index',{doc:doc});
-        // res.send(doc);
       }
     });
 });
@@ -90,10 +89,6 @@ app.get('/scraper',function(req,res){
      $ = cheerio.load(body);
 
      $('.middle_col').each(function(i,elem){
-        debugger
-        // console.log($(this));
-        // console.log($(this).find("a").text());
-        // console.log("http://www.rottentomatoes.com"+$(this).find("a").attr("href"))
 
         var movieName = $(this).find("a").text();
         var url = "http://www.rottentomatoes.com"+$(this).find("a").attr("href");
@@ -120,22 +115,6 @@ app.get('/scraper',function(req,res){
           }
         });
 
-       // var title = $(this).find('.middle_col').children("a").text();
-       // var link = $(this).find('.middle_col').children("a").attr("href");
-       // console.log("Title :"+title);
-       // console.log("Link:"+link);
-       // if(title && link){
-       //  db.scrapedData.save({
-       //    title:title,
-       //    link:link
-       //  }),function(err,saved){
-       //    if(err){
-       //      console.log(err);
-       //    } else {
-       //      console.log(saved);
-       //    }
-       //  }
-       // }
      });
     }
   })
